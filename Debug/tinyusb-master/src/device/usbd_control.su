@@ -1,0 +1,8 @@
+../tinyusb-master/src/device/usbd_control.c:69:20:_status_stage_xact	24	static
+../tinyusb-master/src/device/usbd_control.c:77:6:tud_control_status	16	static
+../tinyusb-master/src/device/usbd_control.c:90:13:_data_stage_xact	40	static
+../tinyusb-master/src/device/usbd_control.c:109:6:tud_control_xfer	40	static,ignoring_inline_asm
+../tinyusb-master/src/device/usbd_control.c:146:6:usbd_control_reset	8	static
+../tinyusb-master/src/device/usbd_control.c:152:6:usbd_control_set_complete_callback	16	static
+../tinyusb-master/src/device/usbd_control.c:158:6:usbd_control_set_request	16	static
+../tinyusb-master/src/device/usbd_control.c:169:6:usbd_control_xfer_cb	40	static,ignoring_inline_asm
