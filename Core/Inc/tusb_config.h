@@ -37,6 +37,7 @@ extern "C" {
 #define BOARD_DEVICE_RHPORT_SPEED    OPT_MODE_FULL_SPEED
 #define BOARD_DEVICE_RHPORT_NUM     0
 #define CFG_TUSB_RHPORT0_MODE       (OPT_MODE_DEVICE | OPT_MODE_FULL_SPEED)
+#define CFG_TUSB_RHPORT1_MODE (OPT_MODE_NONE)
 
 
 //--------------------------------------------------------------------+

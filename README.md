@@ -34,6 +34,8 @@ void OTG_FS_IRQHandler(void)
 
  
  You should be done with this, YMMV, as of today the TinyUSB library is not really documented.
+
+ Other informations are here: https://github.com/hathach/tinyusb/discussions/633
  
  Some advice:
  
@@ -49,4 +51,7 @@ For now audio data is injected in the tud_audio_tx_done_pre_load_cb. This callba
 In this case, 48K / 1000 = 48 samples, 16 bit each.
 
 As of today, in spite of these limits, this is still the easiest way for composite devices, free of charge obviously.
+
+
+
 

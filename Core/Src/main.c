@@ -122,6 +122,7 @@ PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
 /* USER CODE BEGIN PV */
 
+volatile uint32_t MainLoopCounter;
 static uint32_t blink_interval_ms = BLINK_NOT_MOUNTED;
 // Audio controls
 // Current states
@@ -412,21 +413,28 @@ bool tud_audio_rx_done_pre_read_cb(uint8_t rhport, uint16_t n_bytes_received, ui
 	return true;
 }
 
-bool tud_audio_tx_done_pre_load_cb(uint8_t rhport, uint8_t itf, uint8_t ep_in, uint8_t cur_alt_setting)
+bool tud_audio_tx_done_post_load_cb(uint8_t rhport, uint16_t n_bytes_copied, uint8_t itf, uint8_t ep_in, uint8_t cur_alt_setting)
 {
 	(void)rhport;
 	(void)itf;
 	(void)ep_in;
 	(void)cur_alt_setting;
+	static uint16_t LastBytesCopied;
 	int16_t *dst = (int16_t*)mic_buf;
-
+	if (n_bytes_copied != 96 && n_bytes_copied != 0)
+	{
+		LastBytesCopied = n_bytes_copied;
+		return;
+	}
+#if 1
 	for (uint16_t i = 0; i < 48000/1000; i++ )
 	{
-		*dst ++ = (int16_t)(20000.0 * sin(432.0 * 6.28 * AudioCounter++ / 48000));
+		//	*dst ++ = (int16_t)(20000.0f * (float)sinf((float)(432.0f * 6.28f * AudioCounter++ / 48000)));
+		*dst ++ = (int16_t)(-10000 + (AudioCounter+=500) % 20000);
 	}
 	tud_audio_write((uint8_t *)mic_buf, (uint16_t) (2 * 48000 /1000));
 
-
+#endif
 
 	// This callback could be used to fill microphone data separately
 	return true;
@@ -496,7 +504,7 @@ void cdc_task(void)
 
 void audio_task(void)
 {
-
+// #define LOOPBACK_EXAMPLE
 #ifdef LOOPBACK_EXAMPLE
 
 	// When new data arrived, copy data from speaker buffer, to microphone buffer
@@ -550,6 +558,11 @@ void audio_task(void)
 #endif
 }
 
+uint32_t board_millis(void)
+{
+	return HAL_GetTick();
+}
+
 
 //--------------------------------------------------------------------+
 // BLINKING TASK
@@ -566,6 +579,56 @@ void led_blinking_task(void)
 	//  board_led_write(led_state);
 	led_state = 1 - led_state;
 }
+
+
+
+/**
+ * @brief Initializes DWT_Clock_Cycle_Count for DWT_Delay_us function
+ * @return Error DWT counter
+ * 1: clock cycle counter not started
+ * 0: clock cycle counter works
+ */
+uint32_t DWT_Delay_Init(void) {
+	/* Disable TRC */
+
+	CoreDebug->DEMCR &= ~CoreDebug_DEMCR_TRCENA_Msk; // ~0x01000000;
+	/* Enable TRC */
+	CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk; // 0x01000000;
+	/* Disable clock cycle counter */
+	DWT->CTRL &= ~DWT_CTRL_CYCCNTENA_Msk; //~0x00000001;
+	/* Enable clock cycle counter */
+	DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk; //0x00000001;
+	/* Reset the clock cycle counter value */
+	DWT->CYCCNT = 0;
+	/* 3 NO OPERATION instructions */
+	asm("NOP");
+	asm("NOP");
+	asm("NOP");
+	/* Check if clock cycle counter has started */
+	if(DWT->CYCCNT)
+	{
+		return 0; /*clock cycle counter started*/
+	}
+	else
+	{
+		return 1; /*clock cycle counter not started*/
+	}
+}
+	/**
+	 * @brief  This function provides a delay (in microseconds)
+	 * @param  microseconds: delay in microseconds
+	 */
+	__STATIC_INLINE void DWT_Delay_us(volatile uint32_t microseconds)
+	{
+		uint32_t clk_cycle_start = DWT->CYCCNT;
+
+		/* Go to number of cycles for system */
+		microseconds *= (HAL_RCC_GetHCLKFreq() / 1000000);
+
+		/* Delay till end */
+		while ((DWT->CYCCNT - clk_cycle_start) < microseconds);
+	}
+
 
 /* USER CODE END 0 */
 
@@ -602,28 +665,32 @@ int main(void)
   /* Initialize interrupts */
   MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, 1);
-	HAL_Delay(1000);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, 0);
-	HAL_Delay(1000);
-	//  board_init();
-	TU_ASSERT(tusb_init());
-	// init device stack on configured roothub port
-	//	tud_init(BOARD_TUD_RHPORT);
+		if(DWT_Delay_Init())
+		{
+			Error_Handler(); /* Call Error Handler */
+		}
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, 1);
+		HAL_Delay(100);
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, 0);
+		HAL_Delay(100);
+		TU_ASSERT(tusb_init());
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-	while (1)
-	{
+		while (1)
+		{
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		tud_task();
-		audio_task();
-		cdc_task();
-	}
+			tud_task();
+			audio_task();
+			MainLoopCounter++;  //used with debugger to check frequency of main loop
+			cdc_task();
+			led_blinking_task();
+//			DWT_Delay_us(850);  //enable this delay to test MCU load. 850 us is fine with -O0
+		}
   /* USER CODE END 3 */
 }
 
@@ -747,11 +814,11 @@ static void MX_GPIO_Init(void)
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
-	/* User can add his own implementation to report the HAL error return state */
-	__disable_irq();
-	while (1)
-	{
-	}
+		/* User can add his own implementation to report the HAL error return state */
+		__disable_irq();
+		while (1)
+		{
+		}
   /* USER CODE END Error_Handler_Debug */
 }
 
@@ -766,7 +833,7 @@ void Error_Handler(void)
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
-	/* User can add his own implementation to report the file name and line number,
+		/* User can add his own implementation to report the file name and line number,
      ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
 }
