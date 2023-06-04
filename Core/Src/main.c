@@ -153,7 +153,7 @@ static void MX_GPIO_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
 static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
-
+__STATIC_INLINE void DWT_Delay_us(volatile uint32_t);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -413,6 +413,20 @@ bool tud_audio_rx_done_pre_read_cb(uint8_t rhport, uint16_t n_bytes_received, ui
 	return true;
 }
 
+
+bool tud_audio_tx_done_pre_load_cb(uint8_t rhport, uint8_t itf, uint8_t ep_in, uint8_t cur_alt_setting)
+{
+  (void) rhport;
+  (void) itf;
+  (void) ep_in;
+  (void) cur_alt_setting;
+
+
+
+  return true;
+}
+
+
 bool tud_audio_tx_done_post_load_cb(uint8_t rhport, uint16_t n_bytes_copied, uint8_t itf, uint8_t ep_in, uint8_t cur_alt_setting)
 {
 	(void)rhport;
@@ -424,7 +438,7 @@ bool tud_audio_tx_done_post_load_cb(uint8_t rhport, uint16_t n_bytes_copied, uin
 	if (n_bytes_copied != 96 && n_bytes_copied != 0)
 	{
 		LastBytesCopied = n_bytes_copied;
-		return;
+		return true;
 	}
 #if 1
 	for (uint16_t i = 0; i < 48000/1000; i++ )
@@ -433,7 +447,7 @@ bool tud_audio_tx_done_post_load_cb(uint8_t rhport, uint16_t n_bytes_copied, uin
 		*dst ++ = (int16_t)(-10000 + (AudioCounter+=500) % 20000);
 	}
 	tud_audio_write((uint8_t *)mic_buf, (uint16_t) (2 * 48000 /1000));
-
+	DWT_Delay_us(950);  //enable this delay to test MCU load. 850 us is fine with -O0
 #endif
 
 	// This callback could be used to fill microphone data separately
@@ -689,7 +703,7 @@ int main(void)
 			MainLoopCounter++;  //used with debugger to check frequency of main loop
 			cdc_task();
 			led_blinking_task();
-//			DWT_Delay_us(850);  //enable this delay to test MCU load. 850 us is fine with -O0
+	//		DWT_Delay_us(850);  //enable this delay to test MCU load. 850 us is fine with -O0
 		}
   /* USER CODE END 3 */
 }
