@@ -422,7 +422,6 @@ bool tud_audio_tx_done_pre_load_cb(uint8_t rhport, uint8_t itf, uint8_t ep_in, u
   (void) cur_alt_setting;
 
 
-
   return true;
 }
 
@@ -433,24 +432,29 @@ bool tud_audio_tx_done_post_load_cb(uint8_t rhport, uint16_t n_bytes_copied, uin
 	(void)itf;
 	(void)ep_in;
 	(void)cur_alt_setting;
-	static uint16_t LastBytesCopied;
 	int16_t *dst = (int16_t*)mic_buf;
+
+#if 0
+	static uint16_t LastBytesCopied; //used to check for partial writes, but it seems this never happens
 	if (n_bytes_copied != 96 && n_bytes_copied != 0)
 	{
 		LastBytesCopied = n_bytes_copied;
-		return true;
 	}
+#endif
 #if 1
 	for (uint16_t i = 0; i < 48000/1000; i++ )
 	{
-		//	*dst ++ = (int16_t)(20000.0f * (float)sinf((float)(432.0f * 6.28f * AudioCounter++ / 48000)));
+	//		*dst ++ = (int16_t)(20000.0f * arm_sinf32((float)(432.0f * 6.28f * AudioCounter++ / 48000)));
+	//	*dst ++ = (int16_t)(20000.0f * sinf((float)(432.0f * 6.28f * AudioCounter++ / 48000)));
 		*dst ++ = (int16_t)(-10000 + (AudioCounter+=500) % 20000);
 	}
+	/* There seems to be no advantage in deferring tud_audio_write to tud_audio_tx_done_pre_load_cb
+	 * as in the 4 mic example.
+	 * Also, a delay in this callback has the same effect of a delay in the main loop.
+	 */
 	tud_audio_write((uint8_t *)mic_buf, (uint16_t) (2 * 48000 /1000));
-	DWT_Delay_us(950);  //enable this delay to test MCU load. 850 us is fine with -O0
-#endif
 
-	// This callback could be used to fill microphone data separately
+#endif
 	return true;
 }
 
@@ -703,7 +707,7 @@ int main(void)
 			MainLoopCounter++;  //used with debugger to check frequency of main loop
 			cdc_task();
 			led_blinking_task();
-	//		DWT_Delay_us(850);  //enable this delay to test MCU load. 850 us is fine with -O0
+//			DWT_Delay_us(950);  //enable this delay to test MCU load. 850 us is fine with -O0, 950 with -O3 (98 MHz F411)
 		}
   /* USER CODE END 3 */
 }
