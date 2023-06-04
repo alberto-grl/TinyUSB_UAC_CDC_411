@@ -1,3 +1,5 @@
 stm32f4xx_hal_msp.c:63:6:HAL_MspInit	1
-stm32f4xx_hal_msp.c:85:6:HAL_PCD_MspInit	2
-stm32f4xx_hal_msp.c:122:6:HAL_PCD_MspDeInit	2
+stm32f4xx_hal_msp.c:85:6:HAL_TIM_Base_MspInit	2
+stm32f4xx_hal_msp.c:107:6:HAL_TIM_Base_MspDeInit	2
+stm32f4xx_hal_msp.c:132:6:HAL_PCD_MspInit	2
+stm32f4xx_hal_msp.c:169:6:HAL_PCD_MspDeInit	2
