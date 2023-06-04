@@ -1,5 +1,5 @@
 stm32f4xx_hal_exti.c:142:19:HAL_EXTI_SetConfigLine	9
-stm32f4xx_hal_exti.c:237:19:HAL_EXTI_GetConfigLine	9
+stm32f4xx_hal_exti.c:237:19:HAL_EXTI_GetConfigLine	8
 stm32f4xx_hal_exti.c:316:19:HAL_EXTI_ClearConfigLine	4
 stm32f4xx_hal_exti.c:369:19:HAL_EXTI_RegisterCallback	2
 stm32f4xx_hal_exti.c:394:19:HAL_EXTI_GetHandle	2
